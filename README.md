@@ -46,6 +46,8 @@ Once the services are up, you can access the API documentation at:
 
 http://localhost:9003/docs
 
+default port is 9003, if you changed - change this adress
+
 ## Available Make Commands
 
 - make help: Show all available commands
