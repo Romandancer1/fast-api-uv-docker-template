@@ -1,4 +1,4 @@
-# FAST API template
+# Fast api docker/uv/alembic/postgres/sqlalchemy template
 
 This project is a service template built with FastAPI, Celery, PostgreSQL, and Redis.
 All current features well tested on UNIX systems.
