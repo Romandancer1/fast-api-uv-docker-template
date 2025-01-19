@@ -11,6 +11,7 @@ Used stack:
 - Celery worker for background tasks
 - SQLAlchemy
 - Alembic for migrations
+- Linters, like [ruff] https://docs.astral.sh/ruff/, isort and black
 - A lot of usefull commands with makefile, that makes life easy
 
 ## Project Structure
