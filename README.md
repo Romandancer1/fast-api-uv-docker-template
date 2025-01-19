@@ -21,7 +21,7 @@ The project consists of several services:
 - `db`: PostgreSQL database
 - `backend`: FastAPI application
 - `celery`: Celery worker for background tasks
-- `whodb`: Custom database service
+- `whodb`: Custom database service, lightweight [analog](https://github.com/clidey/whodb) as pgadmin
 
 ## Prerequisites
 
