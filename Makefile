@@ -93,9 +93,7 @@ upload-dump:
 	@$(POSTGRES_CONT) psql -U postgres -c "DROP DATABASE IF EXISTS $(database_name);"
 	@$(POSTGRES_CONT) psql -U postgres -c "CREATE DATABASE $(database_name);"
 	@echo "Applying $(name) dump..."
-	@$(POSTGRES_CONT) psql -U postgres -d $(database_name) -c "SELECT timescaledb_pre_restore();"
 	@$(POSTGRES_CONT) bash -c "pg_restore -e -v -U postgres -Fc --no-owner --no-privileges -d $(database_name) /dump/$(name)"
-	@$(POSTGRES_CONT) psql -U postgres -d $(database_name) -c "SELECT timescaledb_post_restore();"
 
 upload-text-dump:
 	@echo "Recreating '$(database_name)' database..."
@@ -103,9 +101,7 @@ upload-text-dump:
 	@$(POSTGRES_CONT) psql -U postgres -c "DROP DATABASE IF EXISTS $(database_name);"
 	@$(POSTGRES_CONT) psql -U postgres -c "CREATE DATABASE $(database_name);"
 	@echo "Applying $(name) dump..."
-	@$(POSTGRES_CONT) psql -U postgres -d $(database_name) -c "SELECT timescaledb_pre_restore();"
 	@$(POSTGRES_CONT) bash -c "psql -e -v -U postgres -d $(database_name) -f /dump/$(name)"
-	@$(POSTGRES_CONT) psql -U postgres -d $(database_name) -c "SELECT timescaledb_post_restore();"
 
 
 restart:

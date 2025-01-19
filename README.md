@@ -1,6 +1,6 @@
-# Well Monitoring Service
+# FAST API template
 
-This project is a well monitoring service built with FastAPI, Celery, PostgreSQL, and Redis.
+This project is a service template built with FastAPI, Celery, PostgreSQL, and Redis.
 All current features well tested on UNIX systems.
 
 Used stack:
