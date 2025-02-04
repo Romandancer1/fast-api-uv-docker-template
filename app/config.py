@@ -49,7 +49,7 @@ celery = Celery(
     backend=celery_config.result_backend,
 )
 
-celery.autodiscover_tasks(["app"])
+celery.autodiscover_tasks(["app"])  # Add your tasks here
 
 
 def setup_config() -> Config:

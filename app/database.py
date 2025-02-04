@@ -1,31 +1,52 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase, declared_attr
-from app.config import setup_config
 from datetime import datetime
-from typing import Annotated
 
-from sqlalchemy import func
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase, declared_attr, Mapped, mapped_column
+from sqlalchemy import DateTime, func
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlmodel import Field, SQLModel, create_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.config import setup_config
 
 
 DATABASE_URL = setup_config().db.dsn
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
-# Some usefull aliases to imporve speed model creating
-int_pk = Annotated[int, mapped_column(primary_key=True)]
-created_at = Annotated[datetime, mapped_column(server_default=func.now())]
-updated_at = Annotated[
-    datetime, mapped_column(server_default=func.now(), onupdate=datetime.now)
-]
-str_uniq = Annotated[str, mapped_column(unique=True, nullable=False)]
-str_null_true = Annotated[str, mapped_column(nullable=True)]
+
+class Base(SQLModel):
+    """
+    Base Model
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
 
 
-class Base(AsyncAttrs, DeclarativeBase):
-    __abstract__ = True
+class RoleUserModel(Base):
+    """
+    ROLE USER MODEL
+    """
 
-    @declared_attr.directive
-    def __tablename__(cls) -> str:
-        return f"{cls.__name__.lower()}s"
+    created_by_id: int | None = None
+
+
+class TimestampedModel(Base):
+    """
+    CREATED_BY & UPDATED_BY MODEL
+    """
+
+    created_datetime: datetime | None = Field(  # type: ignore
+        default=None,
+        sa_type=DateTime(),
+        sa_column_kwargs={"server_default": func.now()},
+    )
+    updated_datetime: datetime | None = Field(  # type: ignore
+        default=None,
+        sa_type=DateTime(),
+        sa_column_kwargs={"onupdate": datetime.now, "server_default": func.now()},
+    )
+
+
+class DomainModel(RoleUserModel, TimestampedModel):
+    """
+    SUMMARY MODEL
+    """

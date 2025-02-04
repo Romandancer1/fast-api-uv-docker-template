@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 include .env
 
+database_name  = db
 DOCKER_COMP   = docker compose -f docker-compose.dev.yml
 NAME 		  = backend
 EXEC  = $(DOCKER_COMP) exec $(NAME)
@@ -33,10 +34,15 @@ help:
 	@echo "make install_package name=your_packagename	- Installs new package to the integration service"
 	@echo "make install-dev-package name=your_packagename	- Installs new dev package to the integration service"
 	@echo "make restart name=service_name			- Restarts container with provided service_name (use name from docker compose file)"
+	@echo "			------ Datebase-----"
+	@echo "make upload-dump	name=name		- Upload dump from directory db_dumps"
+	@echo "make download-dump				- Download dump from postgres db"
 	@echo "			------ Working with alembic migrations -----"
-	@echo "make makemigrations name="migration"	- Create new migration"
-	@echo "make migrate"						- Apply migrations to database"
-	@echo "make downgrade name="revision"		- Downgrade migrations"
+	@echo "make init-alembic				- Init alembic for only start project"
+	@echo "make makemigrations name="migration"		- Create new migration"
+	@echo "make migrate					- Apply all migration to database"
+	@echo "make downgrade name="revision"			- Downgrade specific migration"
+	@echo "make alembic-merge				- Merge migrations due conflicts"
 	@echo "			------ Working with linters -----"
 	@echo "make linters					- Run all linters that were configured for project"
 
@@ -107,16 +113,39 @@ upload-text-dump:
 restart:
 	@$(DOCKER_COMP) restart $(name)
 
-install_package:
-	@$(EXEC) echo $(name) >> requirements/input/requirements.in
-	@$(UV) pip compile requirements/input/requirements.in -o requirements/lock/requirements.txt
-	@$(UV) pip compile requirements/input/requirements-dev.in -o requirements/lock/requirements-dev.txt
-	@$(UV) pip sync requirements/lock/requirements-dev.txt --system
+install-package:
+	@$(EXEC) sh -c 'pkg_name=$$(echo "$(name)" | cut -d"=" -f1); \
+	if grep -qE "^$${pkg_name}([=<>!]|$$)" requirements/input/requirements.in; then \
+		echo "Package '$${pkg_name}' is already installed"; \
+	else \
+		echo "$(name)" >> requirements/input/requirements.in; \
+		uv pip compile requirements/input/requirements.in -o requirements/lock/requirements.txt; \
+		uv pip compile requirements/input/requirements-dev.in -o requirements/lock/requirements-dev.txt; \
+		uv pip sync requirements/lock/requirements-dev.txt --system; \
+	fi'
+
+update-package:
+	@$(EXEC) sh -c 'pkg_name=$$(echo "$(name)" | cut -d"=" -f1); \
+	if echo "$(name)" | grep -qv "=="; then \
+		echo "Error: Package version must be specified as {package_name}=={version}"; \
+		exit 1; \
+	fi; \
+	sed -i "/^$$pkg_name/d" requirements/input/requirements.in; \
+	echo "$(name)" >> requirements/input/requirements.in; \
+	uv pip compile requirements/input/requirements.in -o requirements/lock/requirements.txt; \
+	uv pip compile requirements/input/requirements-dev.in -o requirements/lock/requirements-dev.txt; \
+	uv pip sync requirements/lock/requirements-dev.txt --system;'
+
 
 install-dev-package:
-	@$(EXEC) echo $(name) >> requirements/input/requirements-dev.in
-	@$(UV) pip compile requirements/input/requirements-dev.in -o requirements/lock/requirements-dev.txt
-	@$(UV) pip sync requirements/lock/requirements-dev.txt --system
+	@$(EXEC) sh -c 'pkg_name=$$(echo "$(name)" | cut -d"=" -f1); \
+	if grep -qE "^$${pkg_name}([=<>!]|$$)" requirements/input/requirements-dev.in; then \
+		echo "Package '$${pkg_name}' is already installed"; \
+	else \
+		echo "$(name)" >> requirements/input/requirements-dev.in; \
+		uv pip compile requirements/input/requirements-dev.in -o requirements/lock/requirements-dev.txt; \
+		uv pip sync requirements/lock/requirements-dev.txt --system; \
+	fi'
 
 show-python-list:
 	@$(UV) python list
@@ -135,6 +164,11 @@ migrate:
 downgrade:
 	@$(BACKEND_CONT) alembic downgrade $(name)
 
+alembic-merge:
+	@$(BACKEND_CONT) alembic merge heads -m ${name}
+
+#TODO - сделать функционал откатывания и нормальных комментариев
+
 # ---------- Linters ----------
 linters:
 	@echo "-------- running black --------"
@@ -144,6 +178,8 @@ linters:
 	@echo "-------- running ruff --------"
 	@$(UV) run ruff check --fix ./app
 	@$(UV) run ruff check ./app
+	@echo "-------- running mypy --------"
+	@$(UV) run mypy ./app
 
 
 black:
@@ -153,3 +189,5 @@ isort:
 ruff:
 	@$(UV) run ruff check --fix ./app
 	@$(UV) run ruff check ./app
+mypy:
+	@$(UV) run mypy ./app
